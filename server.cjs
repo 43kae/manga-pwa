@@ -1,9 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
+const cors = require('cors'); // Import CORS
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+app.use(cors()); //Enable CORS
 
 //PostgreSQL connection
 const pool = new Pool({
@@ -23,10 +26,11 @@ pool.query('SELECT NOW()', (err, res) => {
     }
 });
 
+//Simple API Endpoint
 app.get('/', (req, res) => {
-    res.send('Manga PWA Backend is Running');
+    res.json('Manga PWA Backend is Running');
 });
 
 app.listen(port, () => {
-    console.log('Server running on http://localhost:${port}');
+    console.log(`Server running on http://localhost:${port}`);
 });
