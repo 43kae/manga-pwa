@@ -1,0 +1,3 @@
+[submodule "manga-frontend"]
+	path = manga-frontend
+	url = https://github.com/43kae/manga-frontend.git
