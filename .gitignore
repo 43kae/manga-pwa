@@ -26,3 +26,4 @@ dist-ssr
 # Node
 node_modules/
 .env
+manga-frontend
