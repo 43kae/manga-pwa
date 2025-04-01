@@ -1,5 +1,5 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
 // Scrape anime from animepahe.ru
 const fetchAnimeFromPahe = async () => {
@@ -69,4 +69,4 @@ const fetchAllAnime = async () => {
     return combinedAnime;
 };
 
-module.exports = { fetchAllAnime };
+export { fetchAllAnime };

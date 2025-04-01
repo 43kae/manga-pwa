@@ -14,25 +14,6 @@ const { fetchAllAnime } = require('./src/api/animeScraper');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Manga fetching Endpoint
-app.get('/api/manga', async (req, res) => {
-    try {
-        const mangaData = await fetchAllManga();
-        res.json(mangaData);
-    } catch (error) {
-        res.status(500).send('Error fetching manga data');
-    }
-});
-
-// Anime fetching endpoint
-app.get('/api/anime', async (req, res) => {
-    try {
-        const animeData = await fetchAllAnime();
-        res.json(animeData);
-    } catch (error) {
-        res.status(500).send('Error fetchind anime data');
-    }
-});
 
 app.use(cors({ origin: 'http://localhost:5173', credentials: true })); //Enable CORS
 app.use(express.json());
@@ -156,6 +137,7 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 //     }
 // );
 
+// Google Call Back Route
 app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
@@ -186,17 +168,42 @@ app.get('/api/user', authenticateJWT, (req, res) => {
     res.json(req.user);
 });
 
+//Logout Route
+app.get('/logout', (req, res) => {
+    req.logout((err) => {
+        if (err) {
+            console.error(err);
+        }
+        res.redirect('/');
+    });
+});
+
+
+// Manga fetching Endpoint
+app.get('/api/manga', authenticateJWT, async (req, res) => {
+    try {
+        const mangaData = await fetchAllManga();
+        res.json(mangaData);
+    } catch (error) {
+        res.status(500).send('Error fetching manga data');
+    }
+});
+
+// Anime fetching endpoint
+app.get('/api/anime', authenticateJWT, async (req, res) => {
+    try {
+        const animeData = await fetchAllAnime();
+        res.json(animeData);
+    } catch (error) {
+        res.status(500).send('Error fetchind anime data');
+    }
+});
+
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
 
-//Logout Route
-// app.get('/logout', (req, res) => {
-//     req.logout(err => {
-//         if (err) console.error(err);
-//         res.redirect('/');
-//     });
-// });
 
 //Test DB connection
 // pool.query('SELECT NOW()', (err, res) => {

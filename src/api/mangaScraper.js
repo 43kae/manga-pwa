@@ -1,5 +1,5 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
 // Scrape popular manga data from MangaDex
 const fetchMangaFromMangaDex = async () => {
@@ -72,4 +72,4 @@ const fetchAllManga = async () => {
     return combinedManga;
 };
 
-module.exports = { fetchAllManga };
+export { fetchAllManga };
