@@ -8,19 +8,34 @@ const { transformWithEsbuild } = require('vite');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const jwt = require('jsonwebtoken');
 const pgSession = require('connect-pg-simple')(session);
+const { fetchAllManga } = require('./src/api/mangaScraper');
+const { fetchAllAnime } = require('./src/api/animeScraper');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Manga fetching Endpoint
+app.get('/api/manga', async (req, res) => {
+    try {
+        const mangaData = await fetchAllManga();
+        res.json(mangaData);
+    } catch (error) {
+        res.status(500).send('Error fetching manga data');
+    }
+});
+
+// Anime fetching endpoint
+app.get('/api/anime', async (req, res) => {
+    try {
+        const animeData = await fetchAllAnime();
+        res.json(animeData);
+    } catch (error) {
+        res.status(500).send('Error fetchind anime data');
+    }
+});
+
 app.use(cors({ origin: 'http://localhost:5173', credentials: true })); //Enable CORS
 app.use(express.json());
-
-// Session Setup
-// app.use(session({
-//     secret: 'your_secret_key',
-//     resave: false,
-//     saveUninitialized: false
-// }));
 
 
 //PostgreSQL connection
@@ -49,9 +64,17 @@ app.use(session({
     }
 }));
 
+//Check if sessions are being saved in PostgreSQL
+/* pool.query('SELECT * FROM session', (err, res) => {
+    if (err) {
+        console.error("Session table error:", err);
+    } else {
+        console.log("Existing Sessions:", res.rows);
+    }
+}); */
+
 // Initalize Passport
 app.use(passport.initialize());
-app.use(passport.session());
 
 
 // Google OAuth Strategy
@@ -62,6 +85,8 @@ passport.use(new GoogleStrategy({
     scope: ["profile", "email"]
 }, async (accessToken, refreshToken, profile, done) => {
     try {
+        // console.log("🔄 Google Profile:", profile);
+
         const { id, displayName, emails, photos } = profile;
         const email = emails[0].value;
         const avatar = photos[0].value;
@@ -91,6 +116,8 @@ passport.use(new GoogleStrategy({
             { expiresIn: '7d' } //Token expires in 7 days
         );
 
+        // console.log("✅ Token created:", token);  // Debugging token
+
         return done(null, { user, token });
     } catch (error) {
         console.error('Error handling authentication:', error);
@@ -101,12 +128,12 @@ passport.use(new GoogleStrategy({
 // Passport Serializer
 passport.serializeUser((user, done) => {
     console.log("Serializing user:", user); // Debugging
-    done(null, user.user.id);
+    done(null, user);
 });
 
-passport.deserializeUser(async (id, done) => {
+passport.deserializeUser(async (user, done) => {
     try {
-        const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+        const result = await pool.query("SELECT * FROM users WHERE id = $1", [user.id]);
         if (result.rows.length > 0) {
             done(null, result.rows[0]); // Return user object
         } else {
@@ -121,11 +148,24 @@ passport.deserializeUser(async (id, done) => {
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 //Google Callback Route (now returns JWT)
+// app.get('/auth/google/callback',
+//     passport.authenticate('google', { failureRedirect: '/' }),
+//     (req, res) => {
+//         const token = req.user.token;
+//         res.redirect(`http://localhost:5173/dashboard?token=${token}`);
+//     }
+// );
+
 app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
-        const token = req.user.token;
-        res.redirect(`http://localhost:5173/dashboard?token=${token}`);
+        if (!req.user || !req.user.token) {
+            // console.error("❌ No token generated, redirecting to home.");
+            return res.redirect('http://localhost:5173?error=no_token');
+        }
+
+        // console.log("✅ Token generated:", req.user.token);
+        res.redirect(`http://localhost:5173?token=${req.user.token}`);
     }
 );
 
