@@ -72,4 +72,42 @@ const fetchAllManga = async () => {
     return combinedManga;
 };
 
-export { fetchAllManga };
+// Add error handling middleware
+const handleScrapingError = (error, source) => {
+    console.error(`Error fetching from ${source}:`, error);
+    // You could add logging service integration here
+    return [];
+};
+
+// Add retry mechanism
+const fetchWithRetry = async (url, maxRetries = 3) => {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await axios.get(url);
+        } catch (error) {
+            if (i === maxRetries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
+    }
+};
+
+// Add rate limiting
+const rateLimit = (func, limit) => {
+    const queue = [];
+    let ongoing = 0;
+
+    return async function (...args) {
+        while (ongoing >= limit) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        ongoing++;
+        try {
+            return await func.apply(this, args);
+        } finally {
+            ongoing--;
+        }
+    };
+};
+
+// Export all utilities
+export { fetchAllManga, fetchWithRetry, rateLimit, handleScrapingError };
